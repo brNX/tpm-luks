@@ -18,7 +18,8 @@ OWNERPASS=
 NVPASS=
 KEY_SLOT=
 RAND_SOURCE="/dev/urandom"
-RW_PERMS="AUTHREAD|AUTHWRITE"
+# IRT@Nexor - reduce default permissions mask to allow non-interactive state-protected boot 
+RW_PERMS="AUTHWRITE"
 #
 # Do we need a password at tpm_nvdefine time (other than owner)? 1=false, 0=true
 #
@@ -195,6 +196,10 @@ function nv_define_and_write
 	OWNERPASS_OPTION="-y"
 	WRITEPASS_OPTION=
 
+	# IRT@Nexor - Ensure the NVPASS (area password) is always made available, regardless of permissions mask
+	# Otherwise, nvdefine actions will fail when permissions mask applies 'AUTH' permissions..  
+	get_nv_password "Enter your TPM NVRAM password for new index: "
+	echo -e "\n"
 	get_owner_password
 
 	if [ ! -n "${NVINDEX}" ]; then

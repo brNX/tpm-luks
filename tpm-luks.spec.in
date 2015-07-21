@@ -1,4 +1,4 @@
-%define dracutlibdir %{_prefix}/lib/dracut
+%define dracutlibdir %{_prefix}/share/dracut
 
 %define dracut_mod_name 90crypt-tpm
 %if 0%{?rhel} >= 6
@@ -57,9 +57,12 @@ make install DESTDIR=$RPM_BUILD_ROOT
 /etc/yum/post-actions/tpm-luks.action
 %config /etc/yum/pluginconf.d/post-transaction-actions.conf
 /usr/lib/yum-plugins/post-transaction-actions.py*
-%config /etc/tpm-luks.action
+%config /etc/tpm-luks.conf
 
 %changelog
+* Tue Jul 21 2015 Iain Townsend <info@nexor.com>
+- Fixed for RHEL6 
+
 * Tue Apr 09 2013 Ryan Harper <ryanh@us.ibm.com>
 - Updated to build on F18
 

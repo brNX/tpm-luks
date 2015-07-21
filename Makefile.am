@@ -22,6 +22,7 @@ dist_plymouth_SCRIPTS=dracut/RHEL6/plymouth-tpm/install \
 		      dracut/RHEL6/plymouth-tpm/installkernel \
 		      dracut/RHEL6/plymouth-tpm/plymouth-populate-initrd \
 		      dracut/RHEL6/plymouth-tpm/cryptroot-ask-tpm.sh \
+		      dracut/RHEL6/plymouth-tpm/cryptroot-dontask-tpm.sh \
 		      dracut/RHEL6/plymouth-tpm/plymouth-emergency.sh \
 		      dracut/RHEL6/plymouth-tpm/plymouth-pretrigger.sh
 endif

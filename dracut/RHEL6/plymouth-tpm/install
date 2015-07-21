@@ -16,6 +16,13 @@ inst "$moddir"/cryptroot-ask.sh /sbin/cryptroot-ask
 inst readlink
 # tpm-luks dependencies
 inst "$moddir"/cryptroot-ask-tpm.sh /sbin/cryptroot-ask-tpm
+# IRT@Nexor - deliver our additional non-interactive NV area unseal script: 
+inst "$moddir"/cryptroot-dontask-tpm.sh /sbin/cryptroot-dontask-tpm
+# IRT@Nexor - IF we provide a plain_key within the plymouth-tpm module directory, 
+# incorporate this also into our new initial ramdisk.. 
+if [ -f "$moddir"/plain_key ]; then
+	inst "$moddir"/plain_key /plain_key
+fi
 inst_binary getcapability
 inst_binary awk
 inst_binary od
