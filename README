@@ -9,7 +9,7 @@ Nexor have added the following additional files:
 
 * dracut/RHEL6/create-plain-key.sh
 * apt/zzz-tpm-luks-update.in
-* initramfs-tools/create_plain_key.sh
+* initramfs-tools/create-plain-key.sh
 
 These Nexor additions are covered by the GPL v2 license (see LICENSE.nexor). 
 Nexor have modified the following files, maintaining the license scheme of the original authors: 
@@ -17,6 +17,7 @@ Nexor have modified the following files, maintaining the license scheme of the o
 * configure.in
 * Makefile.am
 * swtpm-utils/Makefile.am
+* dracut/Makefile.am
 * tpm-luks.conf.in
 * tpm-luks.spec.in
 * tpm-luks/tpm-luks
