@@ -6,7 +6,9 @@
 #
 #set -x
 
-AWK=/bin/awk
+#AWK=/usr/bin/awk
+AWK=`which awk`
+#echo "$AWK"
 CRYPTSETUP=/sbin/cryptsetup
 TPM_LUKS_NV_INDEX_LIMIT=128
 

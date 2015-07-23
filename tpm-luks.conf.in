@@ -17,4 +17,4 @@
 #
 #/dev/sda2:1:@sbindir@/tpm-luks-gen-tgrub-pcr-values
 #
-/dev/sda2:1:@sbindir@/tpm-luks-gen-tgrub-pcr-values
+/dev/sda5:1:@sbindir@/tpm-luks-gen-tgrub-pcr-values

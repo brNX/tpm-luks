@@ -8,38 +8,47 @@ This repository is a fork of shpedoikal/tpm-luks.
 Nexor have added the following additional files: 
 
 * dracut/RHEL6/create-plain-key.sh
+* apt/zzz-tpm-luks-update.in
+* initramfs-tools/create_plain_key.sh
 
 These Nexor additions are covered by the GPL v2 license (see LICENSE.nexor). 
 Nexor have modified the following files, maintaining the license scheme of the original authors: 
 
 * configure.in
 * Makefile.am
+* swtpm-utils/Makefile.am
 * tpm-luks.conf.in
 * tpm-luks.spec.in
 * tpm-luks/tpm-luks
+* tpm-luks/tpm-luks-update
 * dracut/RHEL6/plymouth-tpm/install
 * dracut/RHEL6/plymouth-tpm/cryptroot-ask.sh
 * dracut/RHEL6/plymouth-tpm/cryptroot-dontask-tpm.sh
+* initramfs-tools/cryptroot-ask-tpm.sh
+* initramfs-tools/cryptroot-dontask-tpm.sh
+* initramfs-tools/Ubuntu14.04/hooks/cryptroot
+* initramfs-tools/Ubuntu14.04/scripts/local-top/cryptroot
 
 ===== Overview =====
 
 Among other possible usage scenarios, TPM-LUKS enables Secure Boot through tight integration between a host Trusted Platform Module (TPM) and a LUKS encrypted root filesystem. For basic usage and setup, please see README.shpedoikal. 
-The original package has been modified to extend root filesystem support with non-interactive boot capabilities. All changes made are to mature this software for deployment on the RHEL6 platform ONLY. Fedora support should still be considered BETA quality code. The modified early boot workflow is outlined below: 
+The original package has been modified to extend root filesystem support with non-interactive boot capabilities. All changes made are to mature this software for deployment on the RHEL6 platform and Ubuntu 14.04 LTS platform ONLY. Fedora support should still be considered BETA quality code. The modified early boot workflow is outlined below: 
 
-1) If valid TPM NV Area exists, first attempt to unseal the LUKS key without a password (non-interactively) and use this key to unlock the LUKS partition.  
-2) If valid TPM NV Area exists, ask for a password in an attempt to retrieve LUKS key and unlock LUKS partition. (Interactive)
-3) If a plain LUKS keyfile exists in a pre-determined location within the initramfs, attempt to unlock the LUKS partition with this key. 
-4) Request a LUKS passphrase for LUKS partition unlock. (Interactive) 
+1) If valid TPM NV Area exists, first attempt to unseal the LUKS key from this TPM NV Area without a password (non-interactively) and use this key to unlock the LUKS partition.  
+2) If valid TPM NV Area exists, ask for a password in an attempt to retrieve LUKS key from this TPM NV Area using authentication and unlock LUKS partition. (Interactive)
+3) If a plain LUKS keyfile exists in a pre-determined location within the initramfs, attempt to unlock the LUKS partition with this key. (Non-interactive - no TPM interaction) 
+4) Request a LUKS passphrase for LUKS partition unlock. (Interactive - for compatibility with existing early boot crypto root behaviour only) 
 
-The workflow will be attempted sequentially at early boot stage, and will cease upon the first successful unlock of the LUKS root partition. Option 1 allows non-interactive boot with a key protected by the hardware TPM, and relies on PCR measurements to ensure the key is only released when the system boots in a pre-determined 'safe' state. Option 3 enables non-interactive boot, however provides no real additional security over using an unencrypted partition. The benefit being to enable all systems to be built with an encrypted root, without the overhead of interactive boot (i.e. having to enter a passphrase at early boot time) being mandatory prior to the TPM initialisation. When the owner is ready to take advantage of encryption to protect their data at rest, the system can be easily reconfigured to support boot options 1, 2 or 4 above (without need for a complete system rebuild). 
+The workflow will be attempted sequentially at early boot stage, and will cease upon the first successful unlock of the LUKS root partition. Option 1 allows non-interactive boot with a key protected by the hardware TPM, and relies on PCR measurements to ensure the key is only released when the system boots in a pre-determined 'trusted' state. Option 3 also enables non-interactive boot, however provides no real additional security over using an unencrypted partition. The benefit being to enable all systems to be built with an encrypted root, without the overhead of interactive boot (i.e. having to enter a passphrase at early boot time) being mandatory prior to the TPM initialisation. When the owner is ready to take advantage of encryption to protect their data at rest, the system can be easily reconfigured to support boot options 1, 2 or 4 above (without need for a complete system rebuild). 
 
 ===== Option 1: non-interactive TPM protected boot =====
 
 Step 1 - Ensure the securityfs filesystem is mounted. See README.shpedoikal for more information on how to do this. 
 Step 2 - Configure /etc/tpm-luks.conf - copy the example ensuring the device name for the encrypted root partition is correct. 
 Step 3 - Configure the PCRs which we will use to seal the LUKS key into our TPM. These are set in the PCR measurement pre-generation script 'tpm-luks-gen-tgrub-pcr-values' - see README.shpedoikal for more information. Nexor reccomends leaving the defaults set. 
-Step 4 - Ensure the Initramfs has been built with the additional TPM-LUKS Dracut module. ($ 'dracut --force')
-Step 5 - Initialise TPM-LUKS for the host system. ($ 'tpm-luks-init') At this stage we will 'own' the TPM if not already owned, generate a new LUKS key and store in both a new TPM NV RAM Area (sealed to specified PCRs) and also a LUKS keyslot. At the next system boot, our new Dracut module will automatically attempt to unlock the root filesystem using the key now held in the TPM. 
+Step 4a - (RHEL6 only) Ensure the Initramfs has been built with the additional TPM-LUKS Dracut module. ($ 'dracut --force')
+Step 4b - (Ubuntu 14.04 LTS only) Ensure the Initramfs has been built with the additional TPM-LUKS initramfs-tools components. ($ 'update-initramfs -u')
+Step 5 - Initialise TPM-LUKS for the host system. ($ 'tpm-luks-init') At this stage we will 'own' the TPM if not already owned, generate a new LUKS key and store in both a new TPM NV RAM Area (sealed to specified PCRs) and also a LUKS keyslot. At the next system boot, our new Dracut module / Initramfs-tools components will automatically attempt to unlock the root filesystem using the key now held in the TPM. 
 Step 6 - Once verified, we can remove our other LUKS keys from the LUKS keychain, locking the root partition to this physical host system. ($ 'cryptsetup luksKillSlot ...')
 
 ===== Option 2: Interactive TPM protected boot =====
@@ -47,24 +56,28 @@ Step 6 - Once verified, we can remove our other LUKS keys from the LUKS keychain
 Step 1 - Ensure the securityfs filesystem is mounted. See README.shpedoikal for more information on how to do this. 
 Step 2 - Configure /etc/tpm-luks.conf - copy the example ensuring the device name for the encrypted root partition is correct. 
 Step 3 - Configure the PCRs which we will use to seal the LUKS key into our TPM. These are set in the PCR measurement pre-generation script 'tpm-luks-gen-tgrub-pcr-values' - see README.shpedoikal for more information. Nexor reccomends leaving the defaults set. 
-Step 4 - Ensure the Initramfs has been built with the additional TPM-LUKS Dracut module. ($ 'dracut --force')
+Step 4a - (RHEL6 only) Ensure the Initramfs has been built with the additional TPM-LUKS Dracut module. ($ 'dracut --force')
+Step 4b - (Ubuntu 14.04 LTS only) Ensure the Initramfs has been built with the additional TPM-LUKS initramfs-tools components. ($ 'update-initramfs -u')
 Step 5 - Change our TPM NV RAM Area permissions mask to require a password for both READ and WRITE operations. Edit the 'tpm-luks' script and configure the variable RW_PERMS="AUTHREAD|AUTHWRITE". 
-Step 6 - Initialise TPM-LUKS for the host system. ($ 'tpm-luks-init') At this stage we will 'own' the TPM if not already owned, generate a new LUKS key and store in both a new TPM NV RAM Area (sealed to specified PCRs - password set here is now also required during boot) and also a LUKS keyslot. At the next system boot, our new Dracut module will interactively request the TPM NV RAM Area password set earlier, and with this attempt to unlock the root filesystem using the key now held in the TPM. 
+Step 6 - Initialise TPM-LUKS for the host system. ($ 'tpm-luks-init') At this stage we will 'own' the TPM if not already owned, generate a new LUKS key and store in both a new TPM NV RAM Area (sealed to specified PCRs - password set here is now also required during boot) and also a LUKS keyslot. At the next system boot, our new Dracut module / Initramfs-tools components will interactively request the TPM NV RAM Area password set earlier - using this to unseal our LUKS key from the TPM, and with this attempt to unlock the root filesystem using the key now held in the TPM. 
 Step 7 - Once verified, we can remove our other LUKS keys from the LUKS keychain, locking the root partition to this physical host system. ($ 'cryptsetup luksKillSlot ...')
 
 ===== Option 3: non-interactive LUKS keyfile boot =====
 
-Step 1 - Generate a new LUKS keyfile and save it to /usr/share/dracut/modules.d/50plymouth-tpm/plain_key. The 'dracut/RHEL6/create-plain-key.sh' script provided can do this for you. 
-Step 2 - Ensure the Initramfs is now rebuilt with the additional TPM-LUKS Dracut module and our new LUKS keyfile. ($ 'dracut --force') 
-Step 3 - At the next system boot, our new Dracut module will automatically attempt to unlock the root filesystem using the key now provided within the initramfs. 
+Step 1a - (RHEL6 only) Generate a new LUKS keyfile and save it to /usr/share/dracut/modules.d/50plymouth-tpm/plain_key. The 'create-plain-key.sh' script provided can do this for you. 
+Step 1b - (Ubuntu 14.04 LTS only) Generate a new LUKS keyfile and save it to /usr/share/tpm-luks/plain_key. The 'create-plain-key.sh' script provided can do this for you. 
+Step 2a - (RHEL6 only) Ensure the Initramfs is now rebuilt with the additional TPM-LUKS Dracut module and our new LUKS keyfile. ($ 'dracut --force')
+Step 2b - (Ubuntu 14.04 LTS only) Ensure the Initramfs is now rebuilt with the additional TPM-LUKS initramfs-tools components and our new LUKS keyfile. ($ 'update-initramfs -u')
+Step 3 - At the next system boot, our new Dracut module / Initramfs-tools components will automatically attempt to unlock the root filesystem using the key now provided within the initramfs. 
 
 ===== Option 4: Interactive LUKS passphrase boot =====
 
 Step 1 - Ensure we have at least one passphrase in the LUKS keychain for our encrypted root (this is likely to be the case by default). 
-Step 2 - Ensure the Initramfs is now rebuilt with the additional TPM-LUKS Dracut module. ($ 'dracut --force') 
-Step 3 - At the next system boot, our new Dracut module will interactively request the LUKS passphrase, and with this attempt to unlock the root filesystem. NOTE - this is essentially a compatibility mode, and emulates the same behaviour as the standard Dracut cryptroot capabilities. 
+Step 2a - (RHEL6 only) Ensure the Initramfs is now rebuilt with the additional TPM-LUKS Dracut module. ($ 'dracut --force')
+Step 2b - (Ubuntu 14.04 LTS only) Ensure the Initramfs is now rebuilt with the additional TPM-LUKS initramfs-tools components. ($ 'update-initramfs -u')
+Step 3 - At the next system boot, our new Dracut module / Initramfs-tools components will interactively request the LUKS passphrase, and with this attempt to unlock the root filesystem. NOTE - this is essentially a compatibility mode, and emulates the same behaviour as the standard cryptroot capabilities normally delivered from upstream. 
 
-===== Building an RPM using the provided spec =====
+===== Building an RPM (for RHEL6) using the provided spec =====
 
 Ensure prerequisites are installed - rpm-build and rpmdevtools. Use 'rpmdev-setuptree' to setup our RPM build area. 
 
@@ -77,6 +90,20 @@ cd ..
 mv tpm-luks tpm-luks-1.0
 tar Jcvf /path/to/rpmbuild/SOURCES/tpm-luks-1.0.tar.xz tpm-luks-1.0
 rpmbuild -bb tpm-luks-1.0/tpm-luks.spec 
+
+===== Building a DEB (for Ubuntu 14.04) the easy way =====
+
+Ensure prerequisites are installed - checkinstall. 
+
+cd tpm-luks/
+make clean
+autoreconf -ivf
+./configure
+make
+
+checkinstall
+
+When checkinstall runs, it automatically builds a DEB package based on what 'make install' would otherwise have delivered. It may interactively request some information about the package when run - please complete at appropriate. Checkinstall will create a subdirectory called 'doc-pak', which will house the documentation to be included with the DEB package, and add some of the source documentation by default. Please ensure at least the README and LICENSE.nexor files are included here as a minimum, so that the DEB package is built with the appropriate documentation for use. 
 
 ===== Further Assistance =====
 

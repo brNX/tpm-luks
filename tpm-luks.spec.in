@@ -41,7 +41,7 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%doc README TODO
+%doc README TODO LICENSE.nexor
 %config /etc/dracut.conf.d/tpm-luks.conf
 %{_bindir}/*
 #%{_bindir}/getcapability

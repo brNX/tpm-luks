@@ -42,7 +42,15 @@ AM_CFLAGS = -I/usr/linux/include -Wmissing-declarations -Wmissing-prototypes -Wn
 
 INCLUDES =  -Ilib
 #LDADD = lib/.libs/libtpm.a /usr/local/ssl/lib/libcrypto.a
+if FEDORA17
 LDADD = lib/.libs/libtpm.a
+endif
+if RHEL6
+LDADD = lib/.libs/libtpm.a
+endif
+if UBUNTU14
+LDADD = lib/.libs/libtpm.a /usr/lib/x86_64-linux-gnu/libcrypto.a -ldl
+endif
 
 AM_CONDITIONAL = TPM_VTPM
 #AM_LDFLAGS = -all-static
