@@ -46,7 +46,7 @@ The workflow will be attempted sequentially at early boot stage, and will cease 
 
 Step 1 - Ensure the securityfs filesystem is mounted. See README.shpedoikal for more information on how to do this. 
 Step 2 - Configure /etc/tpm-luks.conf - copy the example ensuring the device name for the encrypted root partition is correct. 
-Step 3 - Configure the PCRs which we will use to seal the LUKS key into our TPM. These are set in the PCR measurement pre-generation script 'tpm-luks-gen-tgrub-pcr-values' - see README.shpedoikal for more information. Nexor reccomends leaving the defaults set. 
+Step 3 - Configure the PCRs which we will use to seal the LUKS key into our TPM. These are set in the PCR measurement pre-generation script 'tpm-luks-gen-tgrub2-pcr-values' - see README.shpedoikal for more information. Nexor reccomends leaving the defaults set. 
 Step 4a - (RHEL6 only) Ensure the Initramfs has been built with the additional TPM-LUKS Dracut module. ($ 'dracut --force')
 Step 4b - (Ubuntu 14.04 LTS only) Ensure the Initramfs has been built with the additional TPM-LUKS initramfs-tools components. ($ 'update-initramfs -u')
 Step 5 - Initialise TPM-LUKS for the host system. ($ 'tpm-luks-init') At this stage we will 'own' the TPM if not already owned, generate a new LUKS key and store in both a new TPM NV RAM Area (sealed to specified PCRs) and also a LUKS keyslot. At the next system boot, our new Dracut module / Initramfs-tools components will automatically attempt to unlock the root filesystem using the key now held in the TPM. 
@@ -56,7 +56,7 @@ Step 6 - Once verified, we can remove our other LUKS keys from the LUKS keychain
 
 Step 1 - Ensure the securityfs filesystem is mounted. See README.shpedoikal for more information on how to do this. 
 Step 2 - Configure /etc/tpm-luks.conf - copy the example ensuring the device name for the encrypted root partition is correct. 
-Step 3 - Configure the PCRs which we will use to seal the LUKS key into our TPM. These are set in the PCR measurement pre-generation script 'tpm-luks-gen-tgrub-pcr-values' - see README.shpedoikal for more information. Nexor reccomends leaving the defaults set. 
+Step 3 - Configure the PCRs which we will use to seal the LUKS key into our TPM. These are set in the PCR measurement pre-generation script 'tpm-luks-gen-tgrub2-pcr-values' - see README.shpedoikal for more information. Nexor reccomends leaving the defaults set. 
 Step 4a - (RHEL6 only) Ensure the Initramfs has been built with the additional TPM-LUKS Dracut module. ($ 'dracut --force')
 Step 4b - (Ubuntu 14.04 LTS only) Ensure the Initramfs has been built with the additional TPM-LUKS initramfs-tools components. ($ 'update-initramfs -u')
 Step 5 - Change our TPM NV RAM Area permissions mask to require a password for both READ and WRITE operations. Edit the 'tpm-luks' script and configure the variable RW_PERMS="AUTHREAD|AUTHWRITE". 
